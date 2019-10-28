@@ -1,0 +1,16 @@
+{
+  "name": "readit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "sls invoke local -f sendEmail"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.556.0",
+    "node-fetch": "^2.6.0"
+  }
+}

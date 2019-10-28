@@ -1,0 +1,28 @@
+service: readit
+
+provider:
+  name: aws
+  stage: prod
+  runtime: nodejs10.x
+  region: us-east-1
+  environment:
+    SOURCE_EMAIL: ${env:SOURCE_EMAIL}
+    DESTINATION_EMAIL: ${env:DESTINATION_EMAIL}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "ses:SendEmail"
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "secretsmanager:GetSecretValue"
+      Resource:
+        - "arn:aws:secretsmanager:us-east-1:${env:AWS_ACCOUNT_ID}:secret:POCKET_ACCESS_TOKEN-ZNxMKR"
+        - "arn:aws:secretsmanager:us-east-1:${env:AWS_ACCOUNT_ID}:secret:POCKET_CONSUMER_KEY-EV9PCZ"
+
+functions:
+  sendEmail:
+    handler: handler.sendEmail
+    events:
+      # UTC 9am daily
+      - schedule: cron(0 9 * * ? *)
