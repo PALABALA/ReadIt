@@ -152,12 +152,12 @@ module.exports.sendEmail = async event => {
 		const emailPocketItems = [];
 		if (itemDetails.length <= MAX_EMAIL_ITEMS) {
 			emailPocketItems = itemDetails;
-		}
-
-		for (let i = 0; i < MAX_EMAIL_ITEMS; i++) {
-			const index = getRandomInt(0, itemDetails.length);
-			emailPocketItems.push(itemDetails[index]);
-			itemDetails.splice(index, 1);
+		} else {
+			for (let i = 0; i < MAX_EMAIL_ITEMS; i++) {
+				const index = getRandomInt(0, itemDetails.length);
+				emailPocketItems.push(itemDetails[index]);
+				itemDetails.splice(index, 1);
+			}
 		}
 
 		const emailParams = generateEmailParams(emailPocketItems);
