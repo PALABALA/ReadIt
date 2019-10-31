@@ -13,6 +13,7 @@ const sourceEmail = process.env.SOURCE_EMAIL;
 const destinationEmail = process.env.DESTINATION_EMAIL;
 
 const MAX_EMAIL_ITEMS = 2;
+const POCKET_ITEM_BASE_URL = 'https://app.getpocket.com/read';
 
 async function getAWSSecret(secretName) {
 	try {
@@ -62,18 +63,20 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function generateEmailBodyText(title, url, excerpt) {
+function generateEmailBodyText(itemId, title, url, excerpt) {
 	return `
 		Title: ${title} \n
 		Url: ${url} \n
 		Excertp: ${excerpt}
+		Pocket Page: ${POCKET_ITEM_BASE_URL}/${itemId}
 	`;
 }
 
-function generateEmailBodyHtml(title, url, excerpt) {
+function generateEmailBodyHtml(itemId, title, url, excerpt) {
 	return `
 		<a href="${url}">${title}</a>
 		<p>${excerpt}</p>
+		<a class="pocketLink" href="${POCKET_ITEM_BASE_URL}/${itemId}">Go to pocket</a>
 		<br />
 	`;
 }
@@ -88,14 +91,15 @@ function generateEmailParams(emailPocketItems) {
 		const givenTitle = emailPocketItem['given_title'];
 		const resolvedUrl = emailPocketItem['resolved_url'];
 		const givenUrl = emailPocketItem['given_url'];
+		const itemId = emailPocketItem['item_id'];
 
 		const title = givenTitle ? givenTitle : resolvedTitle;
 		const url = resolvedUrl ? resolvedUrl : givenUrl;
 
 		const excerpt = emailPocketItem['excerpt'];
 
-		emailBodyText += generateEmailBodyText(title, url, excerpt);
-		emailBodyHtml += generateEmailBodyHtml(title, url, excerpt);
+		emailBodyText += generateEmailBodyText(itemId, title, url, excerpt);
+		emailBodyHtml += generateEmailBodyHtml(itemId, title, url, excerpt);
 	}
 
 	const htmlData = `
@@ -104,6 +108,11 @@ function generateEmailParams(emailPocketItems) {
 				<style>
 					a {
 						font-size: 2em;
+						text-decoration: underline;
+						color: #006eb3;
+					}
+					.pocketLink {
+						font-size: 0.5em;
 						text-decoration: underline;
 						color: #006eb3;
 					}
