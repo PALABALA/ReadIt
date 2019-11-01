@@ -74,10 +74,10 @@ function generateEmailBodyText(itemId, title, url, excerpt) {
 
 function generateEmailBodyHtml(itemId, title, url, excerpt) {
 	return `
-		<a href="${url}">${title}</a>
-		<p>${excerpt}</p>
+		<a class="titleLink" href="${url}">${title}</a>
+		<p class="excerpt">${excerpt}</p>
 		<a class="pocketLink" href="${POCKET_ITEM_BASE_URL}/${itemId}">Go to pocket</a>
-		<br />
+		<hr />
 	`;
 }
 
@@ -106,10 +106,13 @@ function generateEmailParams(emailPocketItems) {
 		<html>
 			<head>
 				<style>
-					a {
+					.titleLink {
 						font-size: 2em;
 						text-decoration: underline;
 						color: #006eb3;
+					}
+					.excerpt {
+						margin: 0;
 					}
 					.pocketLink {
 						font-size: 0.5em;
