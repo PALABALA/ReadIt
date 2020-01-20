@@ -161,7 +161,7 @@ module.exports.sendEmail = async event => {
 			};
 		}
 
-		const emailPocketItems = [];
+		let emailPocketItems = [];
 		if (itemDetails.length <= MAX_EMAIL_ITEMS) {
 			emailPocketItems = itemDetails;
 		} else {
