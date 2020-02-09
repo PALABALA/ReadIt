@@ -5,7 +5,8 @@
   "main": "handler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "sls invoke local -f sendEmail"
+    "daily-email": "sls invoke local -f sendDailyEmail",
+    "biweekly-email": "sls invoke local -f sendBiweeklyEmail"
   },
   "author": "",
   "license": "ISC",

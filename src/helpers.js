@@ -1,21 +1,8 @@
-'use strict';
-
-const AWS = require('aws-sdk');
 const fetch = require ('node-fetch');
 
-const ses = new AWS.SES();
-const secretManagerClient = new AWS.SecretsManager();
+const { POCKET_ACCESS_TOKEN_NAME, POCKET_CONSUMER_KEY_NAME, POCKET_ITEM_STATE, POCKET_ITEM_BASE_URL } = require('./constants.js');
 
-const pocketAccessTokenName = 'POCKET_ACCESS_TOKEN';
-const pocketConsumerKeyName = 'POCKET_CONSUMER_KEY';
-
-const sourceEmail = process.env.SOURCE_EMAIL;
-const destinationEmail = process.env.DESTINATION_EMAIL;
-
-const MAX_EMAIL_ITEMS = 2;
-const POCKET_ITEM_BASE_URL = 'https://app.getpocket.com/read';
-
-async function getAWSSecret(secretName) {
+const getAWSSecret = async (secretName, secretManagerClient) => {
 	try {
 		const data = await secretManagerClient.getSecretValue({ SecretId: secretName }).promise();
 		if ('SecretString' in data) {
@@ -30,10 +17,10 @@ async function getAWSSecret(secretName) {
 	}
 }
 
-async function getPocketItemDetails() {
+const getPocketItemDetails = async (secretManagerClient, state=POCKET_ITEM_STATE.UNREAD) => {
 	try {
-		const pocketConsumerKey = await getAWSSecret(pocketConsumerKeyName);
-		const pocketAccessToken = await getAWSSecret(pocketAccessTokenName);
+		const pocketConsumerKey = await getAWSSecret(POCKET_CONSUMER_KEY_NAME, secretManagerClient);
+		const pocketAccessToken = await getAWSSecret(POCKET_ACCESS_TOKEN_NAME, secretManagerClient);
 
 		const pocketData = await fetch('https://getpocket.com/v3/get', {
 			method: 'POST',
@@ -44,7 +31,8 @@ async function getPocketItemDetails() {
 			},
 			body: JSON.stringify({
 				'consumer_key': pocketConsumerKey,
-				'access_token': pocketAccessToken
+				'access_token': pocketAccessToken,
+				'state': state
 			})
 		});
 
@@ -58,11 +46,6 @@ async function getPocketItemDetails() {
 	}
 }
 
-// min inclusive, max exclusive
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
 function generateEmailBodyText(itemId, title, url, excerpt) {
 	return `
 		Title: ${title} \n
@@ -73,15 +56,16 @@ function generateEmailBodyText(itemId, title, url, excerpt) {
 }
 
 function generateEmailBodyHtml(itemId, title, url, excerpt) {
-	return `
-		<a class="titleLink" href="${url}">${title}</a>
-		<p class="excerpt">${excerpt}</p>
-		<a class="pocketLink" href="${POCKET_ITEM_BASE_URL}/${itemId}">Go to pocket</a>
-		<hr />
+    return `
+        <a class="titleLink" href="${url}">${title}</a>
+        <p class="excerpt">${excerpt}</p>
+        <a class="pocketLink" href="${POCKET_ITEM_BASE_URL}/${itemId}">Go to pocket</a>
+        <br />
+        <br />
 	`;
 }
 
-function generateEmailParams(emailPocketItems) {
+function generateEmailParams(emailTitle, emailPocketItems, sourceEmail=process.env.SOURCE_EMAIL, destinationEmail = process.env.DESTINATION_EMAIL) {
 	let emailBodyText = '';
 	let emailBodyHtml = '';
 
@@ -105,9 +89,13 @@ function generateEmailParams(emailPocketItems) {
 	const htmlData = `
 		<html>
 			<head>
-				<style>
+                <style>
+                    #wrapper {
+                        margin: 0 auto;
+                        max-width: 700px;
+                    }
 					.titleLink {
-						font-size: 2em;
+						font-size: 1.8em;
 						text-decoration: underline;
 						color: #006eb3;
 					}
@@ -118,11 +106,13 @@ function generateEmailParams(emailPocketItems) {
 						font-size: 0.5em;
 						text-decoration: underline;
 						color: #006eb3;
-					}
+                    }
 				</style>
 			</head>
-			<body>
-				${emailBodyHtml}
+            <body>
+                <div id='wrapper'>
+    				${emailBodyHtml}
+                </div>
 			</body>
 		</html>
 	`;
@@ -144,47 +134,13 @@ function generateEmailParams(emailPocketItems) {
 			},
 			Subject: {
 				Charset: 'UTF-8',
-				Data: `Your Pocket Reading List`
+				Data: emailTitle
 			}
 		}
 	}
 }
 
-module.exports.sendEmail = async event => {
-	try {
-		const itemDetails = await getPocketItemDetails();
-
-		if (itemDetails.length === 0) {
-			return {
-				statusCode: 200,
-				body: JSON.stringify({ message: 'You finished everything in your pocket!' })
-			};
-		}
-
-		let emailPocketItems = [];
-		if (itemDetails.length <= MAX_EMAIL_ITEMS) {
-			emailPocketItems = itemDetails;
-		} else {
-			for (let i = 0; i < MAX_EMAIL_ITEMS; i++) {
-				const index = getRandomInt(0, itemDetails.length);
-				emailPocketItems.push(itemDetails[index]);
-				itemDetails.splice(index, 1);
-			}
-		}
-
-		const emailParams = generateEmailParams(emailPocketItems);
-
-		const data = await ses.sendEmail(emailParams).promise();
-
-		return {
-			statusCode: 200,
-			body: JSON.stringify(data)
-		};
-	} catch (err) {
-		console.error(err.message);
-		return {
-			statusCode: 500,
-			body: JSON.stringify(err.message)
-		};
-	}
+module.exports = {
+    getPocketItemDetails,
+    generateEmailParams
 };

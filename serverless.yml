@@ -11,7 +11,7 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "ses:SendEmail"
+        - "ses:sendEmail"
       Resource: "*"
     - Effect: "Allow"
       Action:
@@ -21,8 +21,14 @@ provider:
         - "arn:aws:secretsmanager:us-east-1:${env:AWS_ACCOUNT_ID}:secret:POCKET_CONSUMER_KEY-EV9PCZ"
 
 functions:
-  sendEmail:
-    handler: handler.sendEmail
+  sendDailyEmail:
+    handler: src/daily-email.sendEmail
     events:
       # UTC 9am daily
       - schedule: cron(0 9 * * ? *)
+  sendBiweeklyEmail:
+    handler: src/biweekly-email.sendEmail
+    events:
+      # UTC 9am Friday every second and fourth week of the month
+      - schedule: cron(0 9 ? * 6#2 *)
+      - schedule: cron(0 9 ? * 6#4 *)
